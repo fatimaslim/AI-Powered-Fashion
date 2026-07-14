@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/* ===== StyleMind AI Design System ===== */
+
+:root {
+  /* Brand Colors */
+  --brand-primary: 79 70 229;       /* Indigo-600 */
+  --brand-primary-light: 99 102 241; /* Indigo-500 */
+  --brand-primary-dark: 67 56 202;   /* Indigo-700 */
+  --brand-secondary: 124 58 237;     /* Violet-600 */
+  --brand-accent: 244 63 94;         /* Rose-500 */
+  --brand-accent-warm: 245 158 11;   /* Amber-500 */
+
+  /* Surfaces */
+  --background: 255 255 255;
+  --background-secondary: 248 250 252;
+  --foreground: 15 23 42;
+  --foreground-muted: 100 116 139;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --border: 226 232 240;
+  --ring: 79 70 229;
+
+  /* Semantic */
+  --success: 34 197 94;
+  --warning: 245 158 11;
+  --error: 239 68 68;
+  --info: 59 130 246;
+}
+
+.dark {
+  --background: 2 6 23;
+  --background-secondary: 15 23 42;
+  --foreground: 248 250 252;
+  --foreground-muted: 148 163 184;
+  --card: 15 23 42;
+  --card-foreground: 248 250 252;
+  --border: 30 41 59;
+  --ring: 99 102 241;
+}
+
+@theme inline {
+  --color-background: rgb(var(--background));
+  --color-background-secondary: rgb(var(--background-secondary));
+  --color-foreground: rgb(var(--foreground));
+  --color-foreground-muted: rgb(var(--foreground-muted));
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+  --color-border: rgb(var(--border));
+  --color-ring: rgb(var(--ring));
+  --color-brand: rgb(var(--brand-primary));
+  --color-brand-light: rgb(var(--brand-primary-light));
+  --color-brand-dark: rgb(var(--brand-primary-dark));
+  --color-brand-secondary: rgb(var(--brand-secondary));
+  --color-accent: rgb(var(--brand-accent));
+  --color-accent-warm: rgb(var(--brand-accent-warm));
+  --color-success: rgb(var(--success));
+  --color-warning: rgb(var(--warning));
+  --color-error: rgb(var(--error));
+  --color-info: rgb(var(--info));
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-plus-jakarta), system-ui, sans-serif;
+}
+
+/* ===== Base Styles ===== */
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--foreground-muted));
+}
+
+/* ===== Glassmorphism ===== */
+.glass {
+  background: rgba(var(--card), 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--border), 0.5);
+}
+
+.glass-strong {
+  background: rgba(var(--card), 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(var(--border), 0.6);
+}
+
+/* ===== Gradient Text ===== */
+.gradient-text {
+  background: linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)), rgb(var(--brand-accent)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-brand {
+  background: linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Gradient Backgrounds ===== */
+.gradient-brand {
+  background: linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)));
+}
+
+.gradient-brand-hover {
+  background: linear-gradient(135deg, rgb(var(--brand-primary-dark)), rgb(var(--brand-primary)));
+}
+
+.gradient-mesh {
+  background: 
+    radial-gradient(at 27% 37%, rgb(var(--brand-primary) / 0.15) 0, transparent 50%),
+    radial-gradient(at 97% 21%, rgb(var(--brand-secondary) / 0.12) 0, transparent 50%),
+    radial-gradient(at 52% 99%, rgb(var(--brand-accent) / 0.08) 0, transparent 50%),
+    radial-gradient(at 10% 29%, rgb(var(--brand-primary-light) / 0.1) 0, transparent 50%),
+    radial-gradient(at 97% 96%, rgb(var(--brand-secondary) / 0.06) 0, transparent 50%),
+    radial-gradient(at 33% 50%, rgb(var(--brand-primary) / 0.05) 0, transparent 50%),
+    radial-gradient(at 79% 53%, rgb(var(--brand-accent) / 0.04) 0, transparent 50%);
+}
+
+/* ===== Animations ===== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgb(var(--brand-primary) / 0.3); }
+  50% { box-shadow: 0 0 40px rgb(var(--brand-primary) / 0.6); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  25% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50% { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; }
+  75% { border-radius: 60% 40% 60% 30% / 60% 40% 30% 60%; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-blob {
+  animation: blob 10s ease-in-out infinite;
+}
+
+/* ===== Selection ===== */
+::selection {
+  background: rgb(var(--brand-primary) / 0.2);
+  color: rgb(var(--foreground));
+}
+
+/* ===== Focus Ring ===== */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* ===== Skeleton Loading ===== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--border) / 0.5) 25%,
+    rgb(var(--border) / 0.8) 50%,
+    rgb(var(--border) / 0.5) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

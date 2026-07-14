@@ -1,0 +1,20 @@
+{
+  "name": "StyleMind AI",
+  "short_name": "StyleMind",
+  "description": "AI-Powered Fashion Intelligence Platform — Virtual Try-On, AI Styling, Outfit Scoring & Smart Wardrobe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "fashion", "shopping"],
+  "lang": "en-US"
+}
