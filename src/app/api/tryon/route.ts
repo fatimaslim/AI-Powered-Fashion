@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     if (!apiKey) {
       return NextResponse.json({ 
-        error: "API key required. Please provide your FASHN API key in Settings or the API Key button.",
+        error: "FASHN API key required. If you deployed to Vercel, please add FASHN_API_KEY in your Vercel Environment Variables. Otherwise, enter it using the API Key button.",
         requiresApiKey: true 
       }, { status: 401 });
     }

@@ -53,13 +53,13 @@ const GARMENT_EXAMPLES = [
 ];
 
 const HIJAB_FACE_EXAMPLES = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop", // clear face
+  "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1000&auto=format&fit=crop", // another clear face
 ];
 
 const HIJAB_EXAMPLES = [
-  "https://images.unsplash.com/photo-1590845947670-c009801ffa74?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1583001931096-959e9a1a6223?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1598555353592-231a4a4df61b?q=80&w=1000&auto=format&fit=crop", // woman wearing hijab
+  "https://images.unsplash.com/photo-1583001931096-959e9a1a6223?q=80&w=1000&auto=format&fit=crop", // hijab product
 ];
 
 const MAX_IMAGE_HEIGHT = 2000;
