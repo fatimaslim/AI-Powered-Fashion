@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/brand/Logo";
 import Button from "@/components/ui/button";
 import Link from "next/link";
@@ -21,6 +22,8 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => setMounted(true), []);
 
@@ -29,6 +32,24 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Handle nav link click — smooth scroll on home, navigate on other pages
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    setIsMobileOpen(false);
+
+    if (pathname === "/") {
+      // We're on the landing page — smooth scroll to section
+      const sectionId = href.replace("#", "");
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } else {
+      // We're on another page — navigate to home + hash
+      router.push("/" + href);
+    }
+  };
 
   return (
     <>
@@ -45,7 +66,9 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Logo size="md" />
+            <Link href="/">
+              <Logo size="md" />
+            </Link>
 
             {/* Desktop Nav */}
             <div className="hidden lg:flex items-center gap-1">
@@ -53,7 +76,8 @@ export default function Navbar() {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="px-3 py-2 text-sm font-medium text-foreground-muted hover:text-foreground transition-colors rounded-lg hover:bg-background-secondary"
+                  onClick={(e) => handleNavClick(e, link.href)}
+                  className="px-3 py-2 text-sm font-medium text-foreground-muted hover:text-foreground transition-colors rounded-lg hover:bg-background-secondary cursor-pointer"
                 >
                   {link.label}
                 </a>
@@ -132,8 +156,8 @@ export default function Navbar() {
                     <a
                       key={link.label}
                       href={link.href}
-                      onClick={() => setIsMobileOpen(false)}
-                      className="block px-4 py-3 text-base font-medium text-foreground-muted hover:text-foreground hover:bg-background-secondary rounded-xl transition-colors"
+                      onClick={(e) => handleNavClick(e, link.href)}
+                      className="block px-4 py-3 text-base font-medium text-foreground-muted hover:text-foreground hover:bg-background-secondary rounded-xl transition-colors cursor-pointer"
                     >
                       {link.label}
                     </a>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
   ShirtIcon,
   Plus,
@@ -14,19 +15,106 @@ import Button from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
 import { staggerContainer, staggerItem } from "@/lib/utils";
 
-const categories = ["All", "Tops", "Bottoms", "Dresses", "Shoes", "Accessories"];
+const categories = ["All", "Tops", "Bottoms", "Dresses", "Shoes", "Hijabs", "Accessories"];
 
-const wardrobeItems = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  name: [
-    "Navy Blazer", "White Tee", "Dark Jeans", "Floral Dress",
-    "Leather Sneakers", "Silk Scarf", "Linen Shirt", "Chinos",
-    "Cocktail Dress", "Oxford Shoes", "Watch", "Tote Bag",
-  ][i],
-  category: ["Tops", "Tops", "Bottoms", "Dresses", "Shoes", "Accessories",
-    "Tops", "Bottoms", "Dresses", "Shoes", "Accessories", "Accessories"][i],
-  timesWorn: Math.floor(Math.random() * 20) + 1,
-}));
+const wardrobeItems = [
+  {
+    id: 1,
+    name: "Navy Blazer",
+    brand: "Massimo Dutti",
+    category: "Tops",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 12,
+  },
+  {
+    id: 2,
+    name: "White Cotton T-Shirt",
+    brand: "COS",
+    category: "Tops",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 18,
+  },
+  {
+    id: 3,
+    name: "Dark Wash Jeans",
+    brand: "Levi's",
+    category: "Bottoms",
+    image: "https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 15,
+  },
+  {
+    id: 4,
+    name: "Floral Midi Dress",
+    brand: "& Other Stories",
+    category: "Dresses",
+    image: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 6,
+  },
+  {
+    id: 5,
+    name: "White Sneakers",
+    brand: "Veja",
+    category: "Shoes",
+    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 20,
+  },
+  {
+    id: 6,
+    name: "Silk Chiffon Hijab",
+    brand: "Haute Hijab",
+    category: "Hijabs",
+    image: "https://images.unsplash.com/photo-1590845947670-c009801ffa74?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 10,
+  },
+  {
+    id: 7,
+    name: "Linen Button-Down",
+    brand: "Uniqlo",
+    category: "Tops",
+    image: "https://images.unsplash.com/photo-1596755094514-f87e32f85e23?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 14,
+  },
+  {
+    id: 8,
+    name: "Tailored Chinos",
+    brand: "Arket",
+    category: "Bottoms",
+    image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 11,
+  },
+  {
+    id: 9,
+    name: "Black Evening Dress",
+    brand: "Zara",
+    category: "Dresses",
+    image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 4,
+  },
+  {
+    id: 10,
+    name: "Leather Ankle Boots",
+    brand: "Dr. Martens",
+    category: "Shoes",
+    image: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 9,
+  },
+  {
+    id: 11,
+    name: "Jersey Hijab — Dusty Rose",
+    brand: "Modanisa",
+    category: "Hijabs",
+    image: "https://images.unsplash.com/photo-1583001931096-959e9a1a6223?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 16,
+  },
+  {
+    id: 12,
+    name: "Leather Tote Bag",
+    brand: "Polène",
+    category: "Accessories",
+    image: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=400&auto=format&fit=crop",
+    timesWorn: 8,
+  },
+];
 
 export default function WardrobePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -103,8 +191,14 @@ export default function WardrobePage() {
           <motion.div key={item.id} variants={staggerItem}>
             <Card className="group hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer">
               <CardContent className="p-3">
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-brand/5 to-brand-secondary/5 border border-border/50 flex items-center justify-center mb-2 relative overflow-hidden">
-                  <ShirtIcon className="h-8 w-8 text-brand/20" />
+                <div className="aspect-square rounded-xl border border-border/50 relative overflow-hidden bg-background-secondary mb-2">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    unoptimized
+                  />
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <Button size="sm" variant="glass" className="bg-white/90 text-gray-900 text-xs border-0">
@@ -114,6 +208,7 @@ export default function WardrobePage() {
                   </div>
                 </div>
                 <h3 className="font-medium text-xs truncate">{item.name}</h3>
+                <p className="text-[10px] text-foreground-muted truncate">{item.brand}</p>
                 <div className="flex items-center justify-between mt-1">
                   <Badge variant="outline" className="text-[9px] px-1.5">{item.category}</Badge>
                   <span className="text-[10px] text-foreground-muted">{item.timesWorn}× worn</span>

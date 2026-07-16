@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useEffect } from "react";
 
 interface User {
   id: string;
@@ -13,10 +14,12 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
+  hydrate: () => void;
 }
 
 const DEMO_USER: User = {
@@ -29,33 +32,52 @@ const DEMO_USER: User = {
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: typeof window !== "undefined" && localStorage.getItem("sm_auth") ? DEMO_USER : null,
-  isAuthenticated:
-    typeof window !== "undefined" && localStorage.getItem("sm_auth") === "true",
+  // Start with null — SSR safe. Hydrate on client.
+  user: null,
+  isAuthenticated: false,
+  isHydrated: false,
+
+  hydrate: () => {
+    if (typeof window === "undefined") return;
+    const authFlag = localStorage.getItem("sm_auth");
+    const savedUser = localStorage.getItem("sm_user");
+    if (authFlag === "true") {
+      const user = savedUser ? JSON.parse(savedUser) : DEMO_USER;
+      set({ user, isAuthenticated: true, isHydrated: true });
+    } else {
+      set({ isHydrated: true });
+    }
+  },
 
   login: async (email: string, password: string) => {
-    // Simulated auth — accepts any credentials
-    // In production, password would be sent to auth server
     console.log("[Auth] Login attempt:", email, password ? "(password provided)" : "(no password)");
     await new Promise((r) => setTimeout(r, 800));
     const user = { ...DEMO_USER, email };
-    if (typeof window !== "undefined") localStorage.setItem("sm_auth", "true");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sm_auth", "true");
+      localStorage.setItem("sm_user", JSON.stringify(user));
+    }
     set({ user, isAuthenticated: true });
     return true;
   },
 
   register: async (name: string, email: string, password: string) => {
-    // In production, password would be hashed and sent to auth server
     console.log("[Auth] Register:", name, email, password ? "(password set)" : "(no password)");
     await new Promise((r) => setTimeout(r, 800));
     const user = { ...DEMO_USER, name, email };
-    if (typeof window !== "undefined") localStorage.setItem("sm_auth", "true");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sm_auth", "true");
+      localStorage.setItem("sm_user", JSON.stringify(user));
+    }
     set({ user, isAuthenticated: true });
     return true;
   },
 
   logout: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("sm_auth");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("sm_auth");
+      localStorage.removeItem("sm_user");
+    }
     set({ user: null, isAuthenticated: false });
   },
 
@@ -64,3 +86,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: state.user ? { ...state.user, ...updates } : null,
     })),
 }));
+
+// Hook to call in layouts — hydrates auth from localStorage on mount
+export function useAuthHydration() {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      hydrate();
+    }
+  }, [hydrate, isHydrated]);
+}

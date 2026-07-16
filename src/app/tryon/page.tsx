@@ -39,6 +39,8 @@ const CATEGORY_API_MAP: Record<string, string> = {
   "Full-body": "one-pieces",
 };
 
+type TryOnMode = "clothing" | "hijab";
+
 const MODEL_EXAMPLES = [
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop",
@@ -48,6 +50,16 @@ const GARMENT_EXAMPLES = [
   "https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1596755094514-f87e32f85e23?q=80&w=1000&auto=format&fit=crop",
+];
+
+const HIJAB_FACE_EXAMPLES = [
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1000&auto=format&fit=crop",
+];
+
+const HIJAB_EXAMPLES = [
+  "https://images.unsplash.com/photo-1590845947670-c009801ffa74?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1583001931096-959e9a1a6223?q=80&w=1000&auto=format&fit=crop",
 ];
 
 const MAX_IMAGE_HEIGHT = 2000;
@@ -70,6 +82,7 @@ export default function TryOnPage() {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(store.apiKey);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<AnalysisTab>("score");
+  const [tryOnMode, setTryOnMode] = useState<TryOnMode>("clothing");
 
   // Loading stage animation
   useEffect(() => {
@@ -195,8 +208,8 @@ export default function TryOnPage() {
         body: JSON.stringify({
           model_image: modelB64,
           garment_image: garmentB64,
-          garment_photo_type: store.settings.garmentPhotoType.toLowerCase(),
-          category: CATEGORY_API_MAP[store.settings.category],
+          garment_photo_type: tryOnMode === "hijab" ? "auto" : store.settings.garmentPhotoType.toLowerCase(),
+          category: tryOnMode === "hijab" ? "tops" : CATEGORY_API_MAP[store.settings.category],
           mode: store.settings.mode.toLowerCase(),
           segmentation_free: store.settings.segmentationFree,
           seed: store.settings.seed,
@@ -273,7 +286,9 @@ export default function TryOnPage() {
                   Virtual <span className="gradient-text">Try-On</span>
                 </h1>
                 <p className="text-foreground-muted mt-1">
-                  Upload your photo and a clothing item to see AI-powered results
+                  {tryOnMode === "hijab"
+                    ? "Upload your face photo and a hijab to see AI-powered results"
+                    : "Upload your photo and a clothing item to see AI-powered results"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -294,6 +309,35 @@ export default function TryOnPage() {
                   Reset
                 </Button>
               </div>
+            </div>
+
+            {/* Mode Toggle: Clothing vs Hijab */}
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => { setTryOnMode("clothing"); store.reset(); }}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer",
+                  tryOnMode === "clothing"
+                    ? "gradient-brand text-white shadow-md"
+                    : "bg-background-secondary text-foreground-muted hover:text-foreground"
+                )}
+              >
+                <Shirt className="h-4 w-4" />
+                Clothing
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTryOnMode("hijab"); store.reset(); }}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer",
+                  tryOnMode === "hijab"
+                    ? "gradient-brand text-white shadow-md"
+                    : "bg-background-secondary text-foreground-muted hover:text-foreground"
+                )}
+              >
+                🧕 Hijab
+              </button>
             </div>
           </motion.div>
 
@@ -352,17 +396,17 @@ export default function TryOnPage() {
                   preview={store.modelImagePreview}
                   onFileSelect={(file, preview) => store.setModelImage(file, preview)}
                   onClear={() => store.setModelImage(null, null)}
-                  label="Your Photo"
+                  label={tryOnMode === "hijab" ? "Your Face Photo" : "Your Photo"}
                   icon="person"
-                  examples={MODEL_EXAMPLES}
+                  examples={tryOnMode === "hijab" ? HIJAB_FACE_EXAMPLES : MODEL_EXAMPLES}
                 />
                 <ImageUploader
                   preview={store.garmentImagePreview}
                   onFileSelect={(file, preview) => store.setGarmentImage(file, preview)}
                   onClear={() => store.setGarmentImage(null, null)}
-                  label="Clothing Item"
+                  label={tryOnMode === "hijab" ? "Hijab Style" : "Clothing Item"}
                   icon="garment"
-                  examples={GARMENT_EXAMPLES}
+                  examples={tryOnMode === "hijab" ? HIJAB_EXAMPLES : GARMENT_EXAMPLES}
                 />
               </div>
 

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore, useAuthHydration } from "@/store/auth-store";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -38,6 +38,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+
+  // Hydrate auth state from localStorage on mount
+  useAuthHydration();
 
   return (
     <div className="min-h-screen bg-background">

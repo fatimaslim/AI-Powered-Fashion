@@ -27,11 +27,10 @@ export async function POST(request: Request) {
     const apiKey = FASHN_API_KEY || api_key;
 
     if (!apiKey) {
-      console.log("No API key provided. Using mock data for demonstration purposes.");
-      await delay(3000); // Simulate API latency
       return NextResponse.json({ 
-        output: ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop"] 
-      });
+        error: "API key required. Please provide your FASHN API key in Settings or the API Key button.",
+        requiresApiKey: true 
+      }, { status: 401 });
     }
 
     // Validate inputs
@@ -39,9 +38,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing model or garment image" }, { status: 400 });
     }
 
+    // Strip data URL prefix (e.g. "data:image/jpeg;base64,") — FASHN expects raw base64
+    const stripBase64Prefix = (b64: string): string => {
+      if (b64.includes(',')) {
+        return b64.split(',')[1];
+      }
+      return b64;
+    };
+
+    const cleanModelImage = stripBase64Prefix(model_image);
+    const cleanGarmentImage = stripBase64Prefix(garment_image);
+
     const inputs = {
-      model_image,
-      garment_image,
+      model_image: cleanModelImage,
+      garment_image: cleanGarmentImage,
       garment_photo_type: garment_photo_type.toLowerCase(),
       category,
       mode: mode.toLowerCase(),
