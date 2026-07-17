@@ -9,9 +9,9 @@ const DEMO_RESULTS_CLOTHING = [
 ];
 
 const DEMO_RESULTS_HIJAB = [
-  "https://images.unsplash.com/photo-1609430528048-8e6a9d0a3e17?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1566616213894-2d4e1baee5d8?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1589998059171-988d887df646?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1618580228723-5e9177a468d6?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1589304000350-0cb5b85a1114?q=80&w=800&auto=format&fit=crop",
 ];
 
 export async function POST(request: Request) {
