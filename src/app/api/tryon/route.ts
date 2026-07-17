@@ -7,6 +7,13 @@ const FASHN_API_KEY = process.env.FASHN_API_KEY;
 // Helper to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Pre-generated demo results — shown when no API key is configured
+const DEMO_RESULTS = [
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1000&auto=format&fit=crop",
+];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -27,10 +34,15 @@ export async function POST(request: Request) {
     const apiKey = FASHN_API_KEY || api_key;
 
     if (!apiKey) {
+      // DEMO MODE: Return pre-generated results so recruiters can explore
+      console.log("[Demo Mode] No API key — returning demo results");
+      await delay(3000); // Simulate realistic API latency
+      const randomIndex = Math.floor(Math.random() * DEMO_RESULTS.length);
       return NextResponse.json({ 
-        error: "FASHN API key required. If you deployed to Vercel, please add FASHN_API_KEY in your Vercel Environment Variables. Otherwise, enter it using the API Key button.",
-        requiresApiKey: true 
-      }, { status: 401 });
+        output: [DEMO_RESULTS[randomIndex]],
+        isDemo: true,
+        message: "Demo Mode — Using pre-generated examples. Add your FASHN API key for real try-on results."
+      });
     }
 
     // Validate inputs

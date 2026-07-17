@@ -24,7 +24,8 @@ import { useAuthStore } from "@/store/auth-store";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Try-On", href: "/tryon", icon: Sparkles },
+  { label: "Clothing Try-On", href: "/tryon", icon: Sparkles },
+  { label: "Hijab Studio", href: "/hijab-studio", icon: () => <span className="text-lg w-[18px] flex justify-center items-center">🧕</span> },
   { label: "AI Chat", href: "/chat", icon: MessageSquare },
   { label: "Wardrobe", href: "/dashboard/wardrobe", icon: ShirtIcon },
   { label: "History", href: "/dashboard/history", icon: Clock },

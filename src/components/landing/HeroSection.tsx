@@ -91,15 +91,16 @@ export default function HeroSection() {
           >
             <Link href="/tryon">
               <Button size="xl" icon={<Sparkles className="h-5 w-5" />}>
-                Try It Free
+                Clothing Try-On
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
-            <a href="#how-it-works">
-              <Button variant="glass" size="xl" icon={<Play className="h-5 w-5" />}>
-                See How It Works
+            <Link href="/hijab-studio">
+              <Button variant="outline" size="xl" className="border-brand/30 bg-brand/5 hover:bg-brand/10">
+                <span className="text-lg mr-2">🧕</span>
+                AI Hijab Studio
               </Button>
-            </a>
+            </Link>
           </motion.div>
 
           {/* Trust badges */}
