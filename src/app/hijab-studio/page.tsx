@@ -159,7 +159,8 @@ export default function HijabStudioPage() {
             isDone = true;
             break;
           } else if (statusData.status === "failed") {
-            throw new Error(statusData.error || "Generation failed");
+            const errorMsg = typeof statusData.error === 'object' && statusData.error ? statusData.error.message : statusData.error;
+            throw new Error(errorMsg || "Generation failed");
           }
           
           await delay(2000);
