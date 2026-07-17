@@ -23,11 +23,6 @@ async function startFashnJob(model_image: string, garment_image: string, fashn_k
       model_image: model_image_uri,
       garment_image: garment_image_uri,
       category: "tops", // We use tops for both T-shirts and Hijabs for FASHN
-      nsfw_filter: true,
-      cover_feet: false,
-      adjust_hands: false,
-      restore_background: true,
-      restore_clothes: true,
       garment_photo_type: "auto"
     }
   };
