@@ -114,17 +114,46 @@ export default function HijabStudioPage() {
     setResult(null);
     setCurrentStage(0);
 
-    // Simulate loading stages
-    for (let i = 0; i < LOADING_STAGES.length; i++) {
-      await new Promise((r) => setTimeout(r, 1200));
-      setCurrentStage(i + 1);
-    }
+    // Simulate loading stages progression up to stage 6 while waiting
+    const stageInterval = setInterval(() => {
+      setCurrentStage((prev) => (prev < 6 ? prev + 1 : prev));
+    }, 2000);
 
-    // Return demo result
-    await new Promise((r) => setTimeout(r, 800));
-    const randomResult = DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)];
-    setResult(randomResult);
-    setIsLoading(false);
+    try {
+      const response = await fetch("/api/tryon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_type: "hijab",
+          model_image: faceImage,
+          garment_image: hijabImage,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate hijab try-on");
+      }
+
+      // Complete the loading stages
+      clearInterval(stageInterval);
+      setCurrentStage(LOADING_STAGES.length);
+      
+      // Artificial short delay for smooth transition
+      await new Promise(r => setTimeout(r, 800));
+      
+      if (data.output && data.output.length > 0) {
+        setResult(data.output[0]);
+      } else {
+        throw new Error("No output generated");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      clearInterval(stageInterval);
+      setIsLoading(false);
+    }
   };
 
   const handleDownload = async () => {
@@ -156,9 +185,6 @@ export default function HijabStudioPage() {
             <h1 className="text-3xl sm:text-4xl font-bold font-[var(--font-plus-jakarta)]">
               AI Hijab <span className="gradient-text">Studio</span>
             </h1>
-            <Badge variant="outline" className="text-xs border-brand/50 text-brand bg-brand/10">
-              ✨ Concept Demo
-            </Badge>
           </div>
           <p className="text-foreground-muted max-w-2xl">
             Preview different hijab styles on your photo using AI. Upload your portrait and a hijab reference

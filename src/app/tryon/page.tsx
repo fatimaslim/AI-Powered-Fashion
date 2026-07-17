@@ -213,9 +213,6 @@ export default function TryOnPage() {
         throw new Error(data.error || `Request failed (${response.status})`);
       }
 
-      // Track demo mode
-      if (data.isDemo) setIsDemoMode(true);
-
       const results: TryOnResult[] = (data.output || []).map((url: string) => ({
         id: generateId(),
         url,
@@ -277,11 +274,6 @@ export default function TryOnPage() {
                   <h1 className="text-3xl sm:text-4xl font-bold font-[var(--font-plus-jakarta)]">
                     Virtual <span className="gradient-text">Try-On</span>
                   </h1>
-                  {isDemoMode && (
-                    <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-500 bg-amber-500/10">
-                      🎭 Demo Mode
-                    </Badge>
-                  )}
                 </div>
                 <p className="text-foreground-muted mt-1">
                   Upload your photo and a clothing item to see AI-powered results

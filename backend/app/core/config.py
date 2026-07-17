@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     # External APIs
     FASHN_API_KEY: str = ""
+    FAL_KEY: str = ""
     OPENAI_API_KEY: str = ""
     
     # JWT Auth

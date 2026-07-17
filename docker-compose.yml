@@ -41,6 +41,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-stylemind}:${POSTGRES_PASSWORD:-password123}@db:5432/${POSTGRES_DB:-stylemind_db}
       - REDIS_URL=redis://redis:6379/0
       - FASHN_API_KEY=${FASHN_API_KEY}
+      - FAL_KEY=${FAL_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./backend:/app
