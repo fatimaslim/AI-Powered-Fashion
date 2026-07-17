@@ -136,10 +136,42 @@ export default function HijabStudioPage() {
         throw new Error(data.error || "Failed to generate hijab try-on");
       }
 
-      if (data.isDemo) {
-        setIsDemoMode(true);
+      setIsDemoMode(!!data.isDemo);
+
+      let finalOutput: string = "";
+
+      if (data.id) {
+        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+        let isDone = false;
+        
+        for (let i = 0; i < 60; i++) {
+          const statusRes = await fetch(`/api/tryon/status?id=${data.id}`);
+          const statusData = await statusRes.json();
+          
+          if (!statusRes.ok) {
+            throw new Error(statusData.error || "Failed to check status");
+          }
+
+          if (statusData.status === "completed") {
+            if (statusData.output && statusData.output.length > 0) {
+              finalOutput = statusData.output[0];
+            }
+            isDone = true;
+            break;
+          } else if (statusData.status === "failed") {
+            throw new Error(statusData.error || "Generation failed");
+          }
+          
+          await delay(2000);
+        }
+
+        if (!isDone) {
+          throw new Error("Generation timed out");
+        }
       } else {
-        setIsDemoMode(false);
+        if (data.output && data.output.length > 0) {
+          finalOutput = data.output[0];
+        }
       }
 
       // Complete the loading stages
@@ -149,8 +181,8 @@ export default function HijabStudioPage() {
       // Artificial short delay for smooth transition
       await new Promise(r => setTimeout(r, 800));
       
-      if (data.output && data.output.length > 0) {
-        setResult(data.output[0]);
+      if (finalOutput) {
+        setResult(finalOutput);
       } else {
         throw new Error("No output generated");
       }

@@ -213,13 +213,43 @@ export default function TryOnPage() {
         throw new Error(data.error || `Request failed (${response.status})`);
       }
 
-      if (data.isDemo) {
-        setIsDemoMode(true);
+      setIsDemoMode(!!data.isDemo);
+
+      let finalOutput: string[] = [];
+
+      if (data.id) {
+        // Poll for completion
+        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+        let isDone = false;
+        
+        for (let i = 0; i < 60; i++) {
+          const statusRes = await fetch(`/api/tryon/status?id=${data.id}`);
+          const statusData = await statusRes.json();
+          
+          if (!statusRes.ok) {
+            throw new Error(statusData.error || "Failed to check status");
+          }
+
+          if (statusData.status === "completed") {
+            finalOutput = statusData.output || [];
+            isDone = true;
+            break;
+          } else if (statusData.status === "failed") {
+            throw new Error(statusData.error || "Generation failed");
+          }
+          
+          await delay(2000);
+        }
+
+        if (!isDone) {
+          throw new Error("Generation timed out");
+        }
       } else {
-        setIsDemoMode(false);
+        // Demo mode immediately returns output
+        finalOutput = data.output || [];
       }
 
-      const results: TryOnResult[] = (data.output || []).map((url: string) => ({
+      const results: TryOnResult[] = finalOutput.map((url: string) => ({
         id: generateId(),
         url,
         modelImagePreview: store.modelImagePreview || "",

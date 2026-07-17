@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 const DEMO_RESULTS_CLOTHING = [
   "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
@@ -14,7 +12,7 @@ const DEMO_RESULTS_HIJAB = [
   "https://images.unsplash.com/photo-1589304000350-0cb5b85a1114?q=80&w=800&auto=format&fit=crop",
 ];
 
-async function processFashn(model_image: string, garment_image: string, fashn_key: string) {
+async function startFashnJob(model_image: string, garment_image: string, fashn_key: string) {
   // Ensure images are properly formatted as data URIs or URLs
   const model_image_uri = model_image.startsWith("data:") || model_image.startsWith("http") ? model_image : `data:image/jpeg;base64,${model_image}`;
   const garment_image_uri = garment_image.startsWith("data:") || garment_image.startsWith("http") ? garment_image : `data:image/jpeg;base64,${garment_image}`;
@@ -46,31 +44,7 @@ async function processFashn(model_image: string, garment_image: string, fashn_ke
   }
 
   const { id } = await submitRes.json();
-
-  // Poll for status
-  for (let i = 0; i < 60; i++) {
-    const statusRes = await fetch(`https://api.fashn.ai/v1/status/${id}`, {
-      headers: { "Authorization": `Bearer ${fashn_key}` }
-    });
-
-    if (statusRes.ok) {
-      const data = await statusRes.json();
-      if (data.status === "completed") {
-        if (data.output && data.output.length > 0) {
-          return data.output[0];
-        }
-        throw new Error("FASHN returned completed but no output image was found");
-      } else if (data.status === "processing" || data.status === "starting" || data.status === "in_queue") {
-        await delay(1000);
-        continue;
-      } else if (data.status === "failed") {
-        throw new Error(data.error || "FASHN generation failed");
-      }
-    }
-    await delay(1000);
-  }
-
-  throw new Error("FASHN API polling timeout");
+  return id;
 }
 
 export async function POST(request: Request) {
@@ -82,17 +56,15 @@ export async function POST(request: Request) {
     console.log(`[Next.js API] Processing ${task_type} tryon request...`);
 
     if (fashnKey) {
-      console.log("[Next.js API] FASHN_API_KEY found. Proceeding with real FASHN generation.");
-      const resultUrl = await processFashn(body.model_image, body.garment_image, fashnKey);
+      console.log("[Next.js API] FASHN_API_KEY found. Starting real FASHN generation.");
+      const jobId = await startFashnJob(body.model_image, body.garment_image, fashnKey);
       return NextResponse.json({
-        output: [resultUrl],
+        id: jobId,
         isDemo: false,
-        message: `Real Mode — FASHN successfully generated ${task_type} image.`
+        message: `Real Mode — FASHN generation started.`
       });
     } else {
       console.log("[Next.js API] FASHN_API_KEY missing. Falling back to Demo Mode.");
-      await delay(3000);
-      
       let result = "";
       if (task_type === "hijab") {
         const randomIndex = Math.floor(Math.random() * DEMO_RESULTS_HIJAB.length);
