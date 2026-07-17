@@ -50,8 +50,8 @@ const GARMENT_EXAMPLES = [
   "https://images.unsplash.com/photo-1596755094514-f87e32f85e23?q=80&w=1000&auto=format&fit=crop",
 ];
 
-const MAX_IMAGE_HEIGHT = 2000;
-const JPEG_QUALITY = 0.95;
+const MAX_IMAGE_HEIGHT = 1024;
+const JPEG_QUALITY = 0.85;
 
 const modeOptions = [
   { value: "Performance", label: "Fast", desc: "~7s" },
@@ -126,8 +126,19 @@ export default function TryOnPage() {
   const resizeImage = async (file: File): Promise<File> => {
     const url = URL.createObjectURL(file);
     const img = new window.Image();
-    img.src = url;
-    await img.decode();
+    
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Image load timeout")), 10000);
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve(null);
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error("Failed to load image"));
+      };
+      img.src = url;
+    });
     const { width, height } = img;
     if (width <= MAX_IMAGE_HEIGHT && height <= MAX_IMAGE_HEIGHT) {
       URL.revokeObjectURL(url);
