@@ -1,41 +1,47 @@
 import { NextResponse } from 'next/server';
 
-const FASTAPI_URL = process.env.FASTAPI_URL || "http://127.0.0.1:8000/api/v1";
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const DEMO_RESULTS_CLOTHING = [
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1000&auto=format&fit=crop",
+];
+
+const DEMO_RESULTS_HIJAB = [
+  "https://images.unsplash.com/photo-1609430528048-8e6a9d0a3e17?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1566616213894-2d4e1baee5d8?q=80&w=800&auto=format&fit=crop",
+];
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // Add default task_type if not present
-    if (!body.task_type) {
-      body.task_type = "clothing";
+    const task_type = body.task_type || "clothing";
+
+    console.log(`[Next.js Mock API] Processing ${task_type} tryon request...`);
+
+    // Simulate AI processing latency
+    await delay(3000);
+
+    let result = "";
+    if (task_type === "hijab") {
+      const randomIndex = Math.floor(Math.random() * DEMO_RESULTS_HIJAB.length);
+      result = DEMO_RESULTS_HIJAB[randomIndex];
+    } else {
+      const randomIndex = Math.floor(Math.random() * DEMO_RESULTS_CLOTHING.length);
+      result = DEMO_RESULTS_CLOTHING[randomIndex];
     }
 
-    console.log(`[Next.js API] Proxying ${body.task_type} tryon request to FastAPI...`);
-
-    const response = await fetch(`${FASTAPI_URL}/tryon/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    return NextResponse.json({
+      output: [result],
+      isDemo: true,
+      message: `Mock Mode — using pre-generated ${task_type} examples.`
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("[Next.js API] FastAPI error:", data);
-      return NextResponse.json(
-        { error: data.detail || "FastAPI routing error" },
-        { status: response.status }
-      );
-    }
-
-    return NextResponse.json(data);
-
   } catch (error: Error | unknown) {
-    console.error("[Next.js API] Error proxying to FastAPI:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred connecting to the backend.";
+    console.error("[Next.js Mock API] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
