@@ -89,6 +89,7 @@ export default function HijabStudioPage() {
   const [currentStage, setCurrentStage] = useState(0);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const handleImageUpload = (type: "face" | "hijab") => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,6 +134,12 @@ export default function HijabStudioPage() {
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Failed to generate hijab try-on");
+      }
+
+      if (data.isDemo) {
+        setIsDemoMode(true);
+      } else {
+        setIsDemoMode(false);
       }
 
       // Complete the loading stages
@@ -185,6 +192,11 @@ export default function HijabStudioPage() {
             <h1 className="text-3xl sm:text-4xl font-bold font-[var(--font-plus-jakarta)]">
               AI Hijab <span className="gradient-text">Studio</span>
             </h1>
+            {isDemoMode && (
+              <Badge variant="outline" className="text-xs border-brand/50 text-brand bg-brand/10">
+                ✨ Concept Demo
+              </Badge>
+            )}
           </div>
           <p className="text-foreground-muted max-w-2xl">
             Preview different hijab styles on your photo using AI. Upload your portrait and a hijab reference

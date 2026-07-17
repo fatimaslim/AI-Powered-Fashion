@@ -145,22 +145,47 @@ async def process_fal_hijab(request: TryOnRequest, fal_key: str):
         raise HTTPException(status_code=504, detail="Fal API timeout")
 
 
+import random
+
+DEMO_RESULTS_CLOTHING = [
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1000&auto=format&fit=crop",
+]
+
+DEMO_RESULTS_HIJAB = [
+    "https://images.unsplash.com/photo-1609430528048-8e6a9d0a3e17?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1566616213894-2d4e1baee5d8?q=80&w=800&auto=format&fit=crop",
+]
+
 @router.post("/")
 async def generate_tryon(request: TryOnRequest):
     """
     AI Router Endpoint:
     Routes requests to the appropriate AI model based on the task type.
+    Falls back to a Mock Backend if API keys are missing.
     """
     if request.task_type == "hijab":
-        # Route to Fal.ai
         fal_key = settings.FAL_KEY
         if not fal_key:
-            raise HTTPException(status_code=500, detail="FAL_KEY is not configured on the server")
+            # MOCK MODE FOR HIJAB
+            await asyncio.sleep(3)
+            return {
+                "output": [random.choice(DEMO_RESULTS_HIJAB)],
+                "isDemo": True,
+                "message": "Mock Mode — Fal.ai API key is missing. Returning a stock demo image."
+            }
         return await process_fal_hijab(request, fal_key)
         
     else:
-        # Route to Fashn (Clothing)
         api_key = request.api_key or settings.FASHN_API_KEY
         if not api_key:
-            raise HTTPException(status_code=401, detail="FASHN API key is required")
+            # MOCK MODE FOR CLOTHING
+            await asyncio.sleep(3)
+            return {
+                "output": [random.choice(DEMO_RESULTS_CLOTHING)],
+                "isDemo": True,
+                "message": "Mock Mode — FASHN API key is missing. Returning a stock demo image."
+            }
         return await process_fashn(request, api_key)
