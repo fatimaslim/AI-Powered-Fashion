@@ -144,8 +144,8 @@ export default function HijabStudioPage() {
         const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
         let isDone = false;
         
-        for (let i = 0; i < 60; i++) {
-          const statusRes = await fetch(`/api/tryon/status?id=${data.id}`);
+        for (let i = 0; i < 150; i++) {
+          const statusRes = await fetch(`/api/tryon/status?id=${data.id}&t=${Date.now()}`, { cache: 'no-store' });
           const statusData = await statusRes.json();
           
           if (!statusRes.ok) {

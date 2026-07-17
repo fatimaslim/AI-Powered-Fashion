@@ -15,7 +15,8 @@ export async function GET(request: Request) {
     }
 
     const statusRes = await fetch(`https://api.fashn.ai/v1/status/${id}`, {
-      headers: { "Authorization": `Bearer ${fashnKey}` }
+      headers: { "Authorization": `Bearer ${fashnKey}` },
+      cache: 'no-store'
     });
 
     if (!statusRes.ok) {
