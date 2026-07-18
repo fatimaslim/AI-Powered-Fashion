@@ -90,6 +90,13 @@ export default function HijabStudioPage() {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setApiKey(localStorage.getItem("fashn_api_key") || "");
+    }
+  }, []);
 
   const handleImageUpload = (type: "face" | "hijab") => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -118,7 +125,7 @@ export default function HijabStudioPage() {
     // Simulate loading stages progression up to stage 6 while waiting
     const stageInterval = setInterval(() => {
       setCurrentStage((prev) => (prev < 6 ? prev + 1 : prev));
-    }, 2000);
+    }, 4000);
 
     try {
       const response = await fetch("/api/tryon", {
@@ -128,6 +135,7 @@ export default function HijabStudioPage() {
           task_type: "hijab",
           model_image: faceImage,
           garment_image: hijabImage,
+          api_key: apiKey,
         }),
       });
 
@@ -145,7 +153,10 @@ export default function HijabStudioPage() {
         let isDone = false;
         
         for (let i = 0; i < 150; i++) {
-          const statusRes = await fetch(`/api/tryon/status?id=${data.id}&t=${Date.now()}`, { cache: 'no-store' });
+          const statusRes = await fetch(`/api/tryon/status?id=${data.id}&t=${Date.now()}`, { 
+            cache: 'no-store',
+            headers: apiKey ? { 'x-api-key': apiKey } : undefined
+          });
           const statusData = await statusRes.json();
           
           if (!statusRes.ok) {

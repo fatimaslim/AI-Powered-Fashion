@@ -78,7 +78,7 @@ export default function TryOnPage() {
     store.resetLoadingStages();
     const interval = setInterval(() => {
       store.advanceLoadingStage();
-    }, 2500);
+    }, 4000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.isLoading]);
@@ -234,7 +234,10 @@ export default function TryOnPage() {
         let isDone = false;
         
         for (let i = 0; i < 150; i++) {
-          const statusRes = await fetch(`/api/tryon/status?id=${data.id}&t=${Date.now()}`, { cache: 'no-store' });
+          const statusRes = await fetch(`/api/tryon/status?id=${data.id}&t=${Date.now()}`, { 
+            cache: 'no-store',
+            headers: store.apiKey ? { 'x-api-key': store.apiKey } : undefined
+          });
           const statusData = await statusRes.json();
           
           if (!statusRes.ok) {

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing job ID" }, { status: 400 });
     }
 
-    const fashnKey = process.env.FASHN_API_KEY;
+    const fashnKey = process.env.FASHN_API_KEY || request.headers.get('x-api-key');
     if (!fashnKey) {
       return NextResponse.json({ error: "FASHN API key is not configured" }, { status: 500 });
     }
