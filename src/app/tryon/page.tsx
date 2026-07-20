@@ -16,7 +16,6 @@ import {
   Trophy,
   Shirt,
 } from "lucide-react";
-import pica from "pica";
 
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -160,10 +159,14 @@ export default function TryOnPage() {
     const tgt = document.createElement("canvas");
     tgt.width = nw;
     tgt.height = nh;
-    const p = pica();
-    await p.resize(src, tgt);
-    const blob = await p.toBlob(tgt, file.type || "image/png", JPEG_QUALITY);
+    tgt.getContext("2d")?.drawImage(img, 0, 0, nw, nh);
+    
+    const blob = await new Promise<Blob | null>((resolve) => 
+      tgt.toBlob((b) => resolve(b), file.type || "image/jpeg", JPEG_QUALITY)
+    );
     URL.revokeObjectURL(url);
+    
+    if (!blob) throw new Error("Failed to resize image");
     return new File([blob], file.name, { type: blob.type });
   };
 
