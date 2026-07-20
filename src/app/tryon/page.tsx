@@ -49,8 +49,8 @@ const GARMENT_EXAMPLES = [
   "https://images.unsplash.com/photo-1596755094514-f87e32f85e23?q=80&w=1000&auto=format&fit=crop",
 ];
 
-const MAX_IMAGE_HEIGHT = 1024;
-const JPEG_QUALITY = 0.85;
+const MAX_IMAGE_HEIGHT = 1280;
+const JPEG_QUALITY = 0.95;
 
 const modeOptions = [
   { value: "Performance", label: "Fast", desc: "~7s" },
