@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import httpx
 import asyncio
+import os
 from app.core.config import settings
 
 router = APIRouter()
@@ -74,75 +75,89 @@ async def process_fashn(request: TryOnRequest, api_key: str):
         raise HTTPException(status_code=504, detail="Fashn API timeout")
 
 
-async def process_fal_hijab(request: TryOnRequest, fal_key: str):
+async def process_gemini_hijab(request: TryOnRequest, api_key: str):
     """
-    Process Hijab transfer using Fal.ai.
-    We use Flux PuLID (Identity Preserving) to generate the user with the hijab,
-    passing the hijab as an image prompt.
+    Process Hijab transfer using Gemini 3 Pro Image editing capabilities.
     """
     async with httpx.AsyncClient(timeout=120.0) as client:
-        # Fal.ai generally accepts data URIs
-        model_image_uri = request.model_image if request.model_image.startswith("data:") else f"data:image/jpeg;base64,{request.model_image}"
-        garment_image_uri = request.garment_image if request.garment_image.startswith("data:") else f"data:image/jpeg;base64,{request.garment_image}"
-        
+        def strip_prefix(b64: str):
+            if "," in b64:
+                return b64.split(",")[1]
+            return b64
+            
+        prompt = (
+            "You are an expert AI image editor. I am providing you with two images: "
+            "1. A portrait of a woman. "
+            "2. A reference image of a hijab. "
+            "Your task is to edit the portrait image. You must preserve the woman's identity, "
+            "preserve her exact facial features, preserve her expression, and preserve the original lighting and background. "
+            "You must transfer ONLY the hijab style, color, folds, and fabric from the reference image onto her head. "
+            "Do not alter her body, her existing clothing (like her shirt), or anything else. "
+            "Return ONLY the generated image."
+        )
+
         payload = {
-            "prompt": "A photorealistic portrait of this person wearing the specific hijab style and fabric from the reference image. High quality, detailed, natural lighting, seamless integration.",
-            "reference_images": [
+            "contents": [
                 {
-                    "image_url": model_image_uri,
-                    "type": "identity", # PuLID identity preservation
-                    "weight": 1.0
-                },
-                {
-                    "image_url": garment_image_uri,
-                    "type": "style", # Style transfer for the hijab
-                    "weight": 0.8
+                    "role": "user",
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": strip_prefix(request.model_image)
+                            }
+                        },
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": strip_prefix(request.garment_image)
+                            }
+                        }
+                    ]
                 }
             ],
-            "num_inference_steps": 28,
-            "guidance_scale": 3.5,
-            "width": 768,
-            "height": 1024
+            "generationConfig": {
+                "temperature": 0.2
+            }
         }
         
+        # We use the generateContent endpoint as seen in the user's error log
         res = await client.post(
-            "https://queue.fal.run/fal-ai/flux-pulid",
-            headers={
-                "Authorization": f"Key {fal_key}",
-                "Content-Type": "application/json"
-            },
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:generateContent?key={api_key}",
+            headers={"Content-Type": "application/json"},
             json=payload
         )
-        if res.status_code != 200:
-            raise HTTPException(status_code=res.status_code, detail=res.text)
-            
-        # Fal.run queue gives us a status URL
-        request_id = res.json().get("request_id")
         
-        for _ in range(60):
-            status_res = await client.get(
-                f"https://queue.fal.run/fal-ai/flux-pulid/requests/{request_id}/status",
-                headers={"Authorization": f"Key {fal_key}"}
-            )
-            if status_res.status_code == 200:
-                data = status_res.json()
-                if data.get("status") == "COMPLETED":
-                    # Get final result
-                    result_res = await client.get(
-                        f"https://queue.fal.run/fal-ai/flux-pulid/requests/{request_id}",
-                        headers={"Authorization": f"Key {fal_key}"}
-                    )
-                    images = result_res.json().get("images", [])
-                    if images:
-                        return {"output": [images[0]["url"]]}
+        if res.status_code != 200:
+            print("Gemini API Error:", res.text)
+            raise HTTPException(status_code=res.status_code, detail=f"Gemini API Error: {res.text}")
+            
+        data = res.json()
+        
+        # Attempt to extract image data from the response parts
+        try:
+            parts = data["candidates"][0]["content"]["parts"]
+            image_b64 = None
+            for part in parts:
+                if "inlineData" in part:
+                    image_b64 = part["inlineData"]["data"]
                     break
-                elif data.get("status") == "IN_QUEUE" or data.get("status") == "IN_PROGRESS":
-                    await asyncio.sleep(1)
-                    continue
-                else:
-                    raise HTTPException(status_code=500, detail="Fal API processing failed")
-                    
-        raise HTTPException(status_code=504, detail="Fal API timeout")
+                # Some alpha models might return the image in a different field
+                if "executableCode" in part:
+                    pass
+            
+            if image_b64:
+                return {"output": [f"data:image/jpeg;base64,{image_b64}"]}
+            else:
+                # If the model didn't return an image, fallback or error
+                text_response = parts[0].get("text", "No image returned")
+                print("Gemini returned text instead of image:", text_response)
+                raise HTTPException(status_code=500, detail="Gemini returned text instead of an image.")
+                
+        except (KeyError, IndexError) as e:
+            print("Failed to parse Gemini response:", data)
+            raise HTTPException(status_code=500, detail="Invalid response format from Gemini API")
 
 
 import random
@@ -167,16 +182,16 @@ async def generate_tryon(request: TryOnRequest):
     Falls back to a Mock Backend if API keys are missing.
     """
     if request.task_type == "hijab":
-        fal_key = settings.FAL_KEY
-        if not fal_key:
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if not gemini_key:
             # MOCK MODE FOR HIJAB
             await asyncio.sleep(3)
             return {
                 "output": [random.choice(DEMO_RESULTS_HIJAB)],
                 "isDemo": True,
-                "message": "Mock Mode — Fal.ai API key is missing. Returning a stock demo image."
+                "message": "Mock Mode — GEMINI_API_KEY is missing. Returning a stock demo image."
             }
-        return await process_fal_hijab(request, fal_key)
+        return await process_gemini_hijab(request, gemini_key)
         
     else:
         api_key = request.api_key or settings.FASHN_API_KEY

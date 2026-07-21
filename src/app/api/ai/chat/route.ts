@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 
 const SYSTEM_PROMPT = `
 You are StyleMind AI, an expert, professional, and friendly virtual fashion stylist. 
@@ -22,45 +22,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Messages are required" }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
       // Fallback to demo mode if no API key is provided
-      console.warn("GEMINI_API_KEY is missing. Falling back to demo chat mode.");
+      console.warn("GROQ_API_KEY is missing. Falling back to demo chat mode.");
       return NextResponse.json({
         role: "assistant",
-        content: "Hello! I am StyleMind AI's demo stylist. To enable my full Gemini AI brain, please add your GEMINI_API_KEY to the environment variables!",
+        content: "Hello! I am StyleMind AI's demo stylist. To enable my full Groq AI brain, please add your GROQ_API_KEY to the environment variables!",
       });
     }
 
-    // Initialize Gemini SDK
-    const ai = new GoogleGenAI({ apiKey });
+    // Initialize Groq SDK
+    const groq = new Groq({ apiKey });
 
-    // Format history for Gemini
-    const contents = messages.map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }]
-    }));
+    // Insert System Prompt at the beginning of the messages
+    const groqMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...messages.map((msg: any) => ({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.content
+      }))
+    ];
 
-    // Call Gemini API
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
-      contents: contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.7,
-      }
+    // Call Groq API
+    const chatCompletion = await groq.chat.completions.create({
+      messages: groqMessages,
+      model: "llama3-70b-8192", // Fast, highly intelligent model
+      temperature: 0.7,
+      max_tokens: 1024,
     });
 
     return NextResponse.json({
       role: "assistant",
-      content: response.text,
+      content: chatCompletion.choices[0]?.message?.content || "Sorry, I couldn't generate a response.",
     });
 
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("Groq API error:", error);
     return NextResponse.json(
-      { error: "Failed to generate AI response" },
+      { error: "Failed to generate AI response from Groq" },
       { status: 500 }
     );
   }
