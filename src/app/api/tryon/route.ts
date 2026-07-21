@@ -57,30 +57,8 @@ export async function POST(request: Request) {
     console.log(`[Next.js API] Processing ${task_type} tryon request...`);
 
     if (task_type === "hijab") {
-      console.log("[Next.js API] Forwarding hijab request to FastAPI backend...");
-      const fastApiResponse = await fetch("http://127.0.0.1:8000/api/v1/tryon/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_type: "hijab",
-          model_image: body.model_image,
-          garment_image: body.garment_image,
-          api_key: fashnKey, // passing the key if needed
-        })
-      });
-
-      if (!fastApiResponse.ok) {
-        const errorText = await fastApiResponse.text();
-        throw new Error(`FastAPI backend failed: ${errorText}`);
-      }
-
-      const fastApiData = await fastApiResponse.json();
-      
-      return NextResponse.json({
-        output: fastApiData.output,
-        isDemo: false,
-        message: "Hijab Try-On processed by Gemini via FastAPI"
-      });
+      // Temporarily bypass FastAPI since it crashes on Vercel
+      console.log("[Next.js API] Hijab request received. Processing via standard flow.");
     }
 
     if (fashnKey) {
