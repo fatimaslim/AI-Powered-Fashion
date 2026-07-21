@@ -58,10 +58,10 @@ export async function POST(request: Request) {
       content: chatCompletion.choices[0]?.message?.content || "Sorry, I couldn't generate a response.",
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Groq API error:", error);
     return NextResponse.json(
-      { error: "Failed to generate AI response from Groq" },
+      { error: `Groq Error: ${error.message || "Failed to generate AI response"}` },
       { status: 500 }
     );
   }

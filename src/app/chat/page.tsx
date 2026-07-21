@@ -82,13 +82,13 @@ export default function ChatPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (error: any) {
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-error`,
           role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
+          content: `Error: ${error.message || "I encountered an error. Please try again."}`,
           timestamp: Date.now(),
         },
       ]);
