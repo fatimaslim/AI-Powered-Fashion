@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Call Groq API
     const chatCompletion = await groq.chat.completions.create({
-      messages: groqMessages,
+      messages: groqMessages as any,
       model: "llama3-70b-8192", // Fast, highly intelligent model
       temperature: 0.7,
       max_tokens: 1024,
