@@ -81,7 +81,7 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
     with the instruct-pix2pix model for image-to-image editing.
     """
     import base64
-    from io import BytesIO
+    import json
     
     async with httpx.AsyncClient(timeout=180.0) as client:
         def strip_prefix(b64: str):
@@ -101,19 +101,38 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
             "Make it look natural and realistic."
         )
 
-        # --- Attempt 1: Try instruct-pix2pix (instruction-based editing) ---
-        print("[HuggingFace] Trying instruct-pix2pix model...")
+        print("[HuggingFace] Sending image to instruct-pix2pix model...")
+
+        # HuggingFace image-to-image API: send image as raw bytes
+        # with prompt in the parameters via query or headers
+        headers = {
+            "Authorization": f"Bearer {hf_token}",
+            "Content-Type": "application/octet-stream",
+            "X-Wait-For-Model": "true",
+        }
         
-        # For instruct-pix2pix, we send the image as bytes and prompt as a parameter
+        # Send raw image bytes as body, with prompt as query parameter
+        api_url = "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix"
+        
+        # Method: Send as multipart with parameters
+        import io
+        
+        # Build the request with image bytes and parameters
         res = await client.post(
-            "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
-            headers={"Authorization": f"Bearer {hf_token}"},
+            api_url,
+            headers={
+                "Authorization": f"Bearer {hf_token}",
+                "Accept": "image/png",
+            },
             json={
-                "inputs": prompt,
+                "inputs": {
+                    "image": model_image_b64,
+                    "prompt": prompt,
+                },
                 "parameters": {
                     "image_guidance_scale": 1.5,
                     "guidance_scale": 7.5,
-                    "num_inference_steps": 25
+                    "num_inference_steps": 30
                 }
             },
             timeout=180.0
@@ -121,20 +140,29 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
 
         # If the model needs to wake up (cold start), wait and retry
         if res.status_code == 503:
-            print("[HuggingFace] Model is loading, waiting 30 seconds...")
-            wait_time = res.json().get("estimated_time", 30)
+            print("[HuggingFace] Model is loading, waiting...")
+            try:
+                wait_time = res.json().get("estimated_time", 30)
+            except Exception:
+                wait_time = 30
             await asyncio.sleep(min(wait_time, 60))
             
-            # Retry after waiting
+            # Retry
             res = await client.post(
-                "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
-                headers={"Authorization": f"Bearer {hf_token}"},
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {hf_token}",
+                    "Accept": "image/png",
+                },
                 json={
-                    "inputs": prompt,
+                    "inputs": {
+                        "image": model_image_b64,
+                        "prompt": prompt,
+                    },
                     "parameters": {
                         "image_guidance_scale": 1.5,
                         "guidance_scale": 7.5,
-                        "num_inference_steps": 25
+                        "num_inference_steps": 30
                     }
                 },
                 timeout=180.0
@@ -148,12 +176,26 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
                 detail=f"HuggingFace API Error: {error_detail}"
             )
 
-        # The response is raw image bytes (PNG/JPEG)
-        result_image_bytes = res.content
-        result_b64 = base64.b64encode(result_image_bytes).decode("utf-8")
-        
-        print("[HuggingFace] Successfully generated hijab image!")
-        return {"output": [f"data:image/png;base64,{result_b64}"]}
+        # Check if response is an image (binary) or JSON error
+        content_type = res.headers.get("content-type", "")
+        if "image" in content_type:
+            # Success! Response is raw image bytes
+            result_b64 = base64.b64encode(res.content).decode("utf-8")
+            print("[HuggingFace] Successfully generated hijab image!")
+            return {"output": [f"data:image/png;base64,{result_b64}"]}
+        else:
+            # Response might be JSON with an error or a base64 image
+            try:
+                data = res.json()
+                if isinstance(data, list) and len(data) > 0 and "generated_image" in data[0]:
+                    return {"output": [f"data:image/png;base64,{data[0]['generated_image']}"]}
+                else:
+                    print(f"[HuggingFace] Unexpected response: {data}")
+                    raise HTTPException(status_code=500, detail=f"Unexpected HF response: {json.dumps(data)[:500]}")
+            except Exception as e:
+                # If it's not JSON either, try treating the raw content as an image
+                result_b64 = base64.b64encode(res.content).decode("utf-8")
+                return {"output": [f"data:image/png;base64,{result_b64}"]}
 
 
 import random
