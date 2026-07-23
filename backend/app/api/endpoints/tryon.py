@@ -75,89 +75,85 @@ async def process_fashn(request: TryOnRequest, api_key: str):
         raise HTTPException(status_code=504, detail="Fashn API timeout")
 
 
-async def process_gemini_hijab(request: TryOnRequest, api_key: str):
+async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
     """
-    Process Hijab transfer using Gemini 3 Pro Image editing capabilities.
+    Process Hijab transfer using Hugging Face's free Inference API
+    with the instruct-pix2pix model for image-to-image editing.
     """
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    import base64
+    from io import BytesIO
+    
+    async with httpx.AsyncClient(timeout=180.0) as client:
         def strip_prefix(b64: str):
             if "," in b64:
                 return b64.split(",")[1]
             return b64
-            
+
+        # Decode the model (person) image from base64 to raw bytes
+        model_image_b64 = strip_prefix(request.model_image)
+        image_bytes = base64.b64decode(model_image_b64)
+
+        # The instruction prompt for instruct-pix2pix
         prompt = (
-            "You are an expert AI image editor. I am providing you with two images: "
-            "1. A portrait of a woman. "
-            "2. A reference image of a hijab. "
-            "Your task is to edit the portrait image. You must preserve the woman's identity, "
-            "preserve her exact facial features, preserve her expression, and preserve the original lighting and background. "
-            "You must transfer ONLY the hijab style, color, folds, and fabric from the reference image onto her head. "
-            "Do not alter her body, her existing clothing (like her shirt), or anything else. "
-            "Return ONLY the generated image."
+            "Add a beautiful, elegant hijab headscarf to the woman in this photo. "
+            "Wrap the hijab neatly around her head and neck. "
+            "Keep her face, expression, and identity perfectly preserved. "
+            "Make it look natural and realistic."
         )
 
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": strip_prefix(request.model_image)
-                            }
-                        },
-                        {
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": strip_prefix(request.garment_image)
-                            }
-                        }
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2
-            }
-        }
+        # --- Attempt 1: Try instruct-pix2pix (instruction-based editing) ---
+        print("[HuggingFace] Trying instruct-pix2pix model...")
         
-        # We use the generateContent endpoint as seen in the user's error log
+        # For instruct-pix2pix, we send the image as bytes and prompt as a parameter
         res = await client.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image:generateContent?key={api_key}",
-            headers={"Content-Type": "application/json"},
-            json=payload
+            "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
+            headers={"Authorization": f"Bearer {hf_token}"},
+            json={
+                "inputs": prompt,
+                "parameters": {
+                    "image_guidance_scale": 1.5,
+                    "guidance_scale": 7.5,
+                    "num_inference_steps": 25
+                }
+            },
+            timeout=180.0
         )
-        
+
+        # If the model needs to wake up (cold start), wait and retry
+        if res.status_code == 503:
+            print("[HuggingFace] Model is loading, waiting 30 seconds...")
+            wait_time = res.json().get("estimated_time", 30)
+            await asyncio.sleep(min(wait_time, 60))
+            
+            # Retry after waiting
+            res = await client.post(
+                "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
+                headers={"Authorization": f"Bearer {hf_token}"},
+                json={
+                    "inputs": prompt,
+                    "parameters": {
+                        "image_guidance_scale": 1.5,
+                        "guidance_scale": 7.5,
+                        "num_inference_steps": 25
+                    }
+                },
+                timeout=180.0
+            )
+
         if res.status_code != 200:
-            print("Gemini API Error:", res.text)
-            raise HTTPException(status_code=res.status_code, detail=f"Gemini API Error: {res.text}")
-            
-        data = res.json()
+            error_detail = res.text
+            print(f"[HuggingFace] API Error ({res.status_code}): {error_detail}")
+            raise HTTPException(
+                status_code=res.status_code, 
+                detail=f"HuggingFace API Error: {error_detail}"
+            )
+
+        # The response is raw image bytes (PNG/JPEG)
+        result_image_bytes = res.content
+        result_b64 = base64.b64encode(result_image_bytes).decode("utf-8")
         
-        # Attempt to extract image data from the response parts
-        try:
-            parts = data["candidates"][0]["content"]["parts"]
-            image_b64 = None
-            for part in parts:
-                if "inlineData" in part:
-                    image_b64 = part["inlineData"]["data"]
-                    break
-                # Some alpha models might return the image in a different field
-                if "executableCode" in part:
-                    pass
-            
-            if image_b64:
-                return {"output": [f"data:image/jpeg;base64,{image_b64}"]}
-            else:
-                # If the model didn't return an image, fallback or error
-                text_response = parts[0].get("text", "No image returned")
-                print("Gemini returned text instead of image:", text_response)
-                raise HTTPException(status_code=500, detail="Gemini returned text instead of an image.")
-                
-        except (KeyError, IndexError) as e:
-            print("Failed to parse Gemini response:", data)
-            raise HTTPException(status_code=500, detail="Invalid response format from Gemini API")
+        print("[HuggingFace] Successfully generated hijab image!")
+        return {"output": [f"data:image/png;base64,{result_b64}"]}
 
 
 import random
@@ -182,16 +178,16 @@ async def generate_tryon(request: TryOnRequest):
     Falls back to a Mock Backend if API keys are missing.
     """
     if request.task_type == "hijab":
-        gemini_key = os.environ.get("GEMINI_API_KEY")
-        if not gemini_key:
+        hf_token = os.environ.get("HF_API_KEY")
+        if not hf_token:
             # MOCK MODE FOR HIJAB
             await asyncio.sleep(3)
             return {
                 "output": [random.choice(DEMO_RESULTS_HIJAB)],
                 "isDemo": True,
-                "message": "Mock Mode — GEMINI_API_KEY is missing. Returning a stock demo image."
+                "message": "Mock Mode — HF_API_KEY is missing. Returning a stock demo image."
             }
-        return await process_gemini_hijab(request, gemini_key)
+        return await process_huggingface_hijab(request, hf_token)
         
     else:
         api_key = request.api_key or settings.FASHN_API_KEY
