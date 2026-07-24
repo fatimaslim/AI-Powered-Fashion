@@ -81,8 +81,8 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
     Uses the InferenceClient for reliable image-to-image editing.
     """
     import base64
+    import traceback
     from io import BytesIO
-    from huggingface_hub import InferenceClient
     from PIL import Image
     
     def strip_prefix(b64: str):
@@ -91,18 +91,20 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
         return b64
 
     try:
-        # 1. Decode the person's portrait from base64 to a PIL Image
+        # Step 1: Decode image
+        print("[HuggingFace] Step 1: Decoding base64 image...")
         model_image_b64 = strip_prefix(request.model_image)
         image_bytes = base64.b64decode(model_image_b64)
         input_image = Image.open(BytesIO(image_bytes)).convert("RGB")
+        print(f"[HuggingFace] Step 1 OK: Image decoded, size={input_image.size}")
         
-        # Resize if too large (HF free tier has limits)
+        # Step 2: Resize if too large
         max_size = 512
         if input_image.width > max_size or input_image.height > max_size:
             input_image.thumbnail((max_size, max_size), Image.LANCZOS)
-            print(f"[HuggingFace] Resized image to {input_image.size}")
+            print(f"[HuggingFace] Step 2: Resized image to {input_image.size}")
 
-        # 2. The instruction prompt
+        # Step 3: Prepare prompt
         prompt = (
             "Add a beautiful, elegant hijab headscarf to the woman in this photo. "
             "Wrap the hijab neatly around her head and neck. "
@@ -110,32 +112,53 @@ async def process_huggingface_hijab(request: TryOnRequest, hf_token: str):
             "Make it look natural and realistic."
         )
 
-        print("[HuggingFace] Calling instruct-pix2pix via official SDK...")
+        # Step 4: Convert image to bytes for the API
+        print("[HuggingFace] Step 3: Converting image to bytes for API...")
+        img_buffer = BytesIO()
+        input_image.save(img_buffer, format="JPEG", quality=85)
+        img_buffer.seek(0)
+        img_bytes_for_api = img_buffer.read()
+        print(f"[HuggingFace] Step 3 OK: Image bytes size = {len(img_bytes_for_api)}")
 
-        # 3. Use HuggingFace's official InferenceClient (handles all formatting)
-        hf_client = InferenceClient(token=hf_token)
+        # Step 5: Call HuggingFace API directly with raw bytes
+        print(f"[HuggingFace] Step 4: Calling API with token starting with {hf_token[:10]}...")
         
-        result_image = hf_client.image_to_image(
-            image=input_image,
-            prompt=prompt,
-            model="timbrooks/instruct-pix2pix",
-            guidance_scale=7.5,
-            num_inference_steps=30,
-        )
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            # Send image as raw bytes with prompt in parameters
+            res = await client.post(
+                "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
+                headers={
+                    "Authorization": f"Bearer {hf_token}",
+                    "X-Wait-For-Model": "true",
+                },
+                content=img_bytes_for_api,
+                timeout=180.0
+            )
+            
+            print(f"[HuggingFace] Step 4 Response: status={res.status_code}, content-type={res.headers.get('content-type', 'unknown')}, size={len(res.content)}")
 
-        # 4. Convert the result PIL Image back to base64
-        output_buffer = BytesIO()
-        result_image.save(output_buffer, format="PNG")
-        output_buffer.seek(0)
-        result_b64 = base64.b64encode(output_buffer.read()).decode("utf-8")
+            if res.status_code != 200:
+                error_text = res.text[:1000]
+                print(f"[HuggingFace] API Error: {error_text}")
+                raise HTTPException(status_code=500, detail=f"HuggingFace API Error ({res.status_code}): {error_text}")
 
-        print("[HuggingFace] Successfully generated hijab image!")
-        return {"output": [f"data:image/png;base64,{result_b64}"]}
+            # Check if response is an image
+            content_type = res.headers.get("content-type", "")
+            if "image" in content_type or len(res.content) > 1000:
+                result_b64 = base64.b64encode(res.content).decode("utf-8")
+                print("[HuggingFace] SUCCESS! Image generated!")
+                return {"output": [f"data:image/png;base64,{result_b64}"]}
+            else:
+                error_text = res.text[:500]
+                print(f"[HuggingFace] Non-image response: {error_text}")
+                raise HTTPException(status_code=500, detail=f"HF returned non-image: {error_text}")
 
+    except HTTPException:
+        raise
     except Exception as e:
-        error_msg = str(e)
-        print(f"[HuggingFace] Error: {error_msg}")
-        raise HTTPException(status_code=500, detail=f"HuggingFace Error: {error_msg}")
+        full_error = traceback.format_exc()
+        print(f"[HuggingFace] FULL ERROR TRACEBACK:\n{full_error}")
+        raise HTTPException(status_code=500, detail=f"HuggingFace Error: {type(e).__name__}: {str(e)}")
 
 
 import random
